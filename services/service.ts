@@ -30,6 +30,14 @@ import ServiceRemote from './webos-service-remote';
 
 const kHomebrewChannelPackageId = rootAppInfo.id;
 const startDevmode = '/media/cryptofs/apps/usr/palm/services/com.palmdts.devmode.service/start-devmode.sh';
+const homebrewBaseDir = ((): string | null => {
+  try {
+    return path.resolve(__dirname, '../../../../');
+  } catch (err) {
+    console.warn('getting homebrewBaseDir failed:', err);
+    return null;
+  }
+})();
 
 // Maps internal setting field name with filesystem flag name.
 type FlagName = string;
@@ -312,7 +320,7 @@ function tryRespond<T extends Record<string, any>>(runner: (message: Message) =>
 
 function runService() {
   const service = new Service(serviceInfo.id);
-  const serviceRemote = new ServiceRemote(service);
+  const serviceRemote = new ServiceRemote();
 
   service.activityManager.idleTimeout = 30;
 
@@ -439,6 +447,7 @@ function runService() {
       const flags = Object.fromEntries(await Promise.all(futureFlags));
       return {
         root: process.getuid() === 0,
+        homebrewBaseDir,
         ...flags,
       };
     }),
@@ -507,6 +516,7 @@ function runService() {
           'befe927c6f62b87545aaefb4b2648a227b22695fa0f78a228dcacf1fbba11aeb',
           'd914b3b444433bf49ff83c3c0ae0b729cf7544c074e72c23ec24e5f86aaaf4ac',
           '6215795aed50c11bb7be716cf66326f3657a129143b5edc1b635dab8b8d2fc9f',
+          'e04a3d61098c6f74d466da6fb457a52fb61a9cc86869059ae32b13bf43cd9d10',
         ];
 
         // RootMyTV v2
@@ -699,7 +709,7 @@ if (process.argv[2] === 'self-update') {
   });
 
   (async () => {
-    const service = new ServiceRemote(null) as Service;
+    const service = new ServiceRemote() as Service;
     try {
       await createToast('Performing self-update (inner)', service);
       const installedPackageId = await installPackage(process.argv[3], service);
